@@ -3,17 +3,15 @@
  * of the expected file operation
  */
 export class FileManagerError extends Error {
-	constructor(code: number, message: string, details?: string) {
+	constructor(code: number, path: string, message: string) {
 		super(message);
 		this.name = "FileManagerError";
 		this.code = code;
-		if (details) {
-			this.details = details;
-		}
+		this.path = path;
 	}
 
 	code: number;
-	details?: string;
+	path: string;
 }
 
 /**
@@ -21,8 +19,18 @@ export class FileManagerError extends Error {
  */
 export class FileNotFoundError extends FileManagerError {
 	constructor(path: string, message = "FileNotFoundError") {
-		super(404, message, path);
+		super(404, path, message);
 		this.name = "FileNotFoundError";
+	}
+}
+
+/**
+ * An error thrown when the file content couldn't be updated
+ */
+export class FileUpdateError extends FileManagerError {
+	constructor(path: string, message = "FileUpdateError") {
+		super(500, path, message);
+		this.name = "FileUpdateError";
 	}
 }
 
@@ -31,7 +39,7 @@ export class FileNotFoundError extends FileManagerError {
  */
 export class PathError extends FileManagerError {
 	constructor(path: string, message = "PathError") {
-		super(400, message, path);
+		super(400, path, message);
 		this.name = "PathError";
 	}
 }
