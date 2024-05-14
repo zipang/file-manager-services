@@ -11,15 +11,15 @@ export interface ResourceInfo {
 	/**
 	 * Get the size in bytes if available or undefined if not available.
 	 */
-	getSize(): Promise<number | undefined>;
+	getSize(): Promise<number | void>;
 	/**
 	 * Get the binary content of the file.
 	 */
-	getBinaryContent(): Promise<Buffer>;
+	getBinaryContent(): Promise<Buffer | void>;
 	/**
 	 * Get the text content of the file.
 	 */
-	getTextContent(): Promise<string>;
+	getTextContent(): Promise<string | void>;
 	/**
 	 * @returns true if the path is a directory, false otherwise
 	 */
@@ -40,15 +40,13 @@ export interface ResourceInfo {
  */
 export interface FileManagerInterface {
 	/**
-	 * Create a text file on the backend service.
-	 * @param path The path of the file to create
-	 * @param content The text content of the file to create
-	 * @returns A promise that resolves to void on success, or rejects with an error
+	 * Retrieves the list of directories path without the files they contain
+	 * @returns A promise that resolves to an array of directory paths
 	 */
-	createTextFile(path: string, content: string): Promise<void>;
+	getTreeContent(): Promise<string[]>;
 
 	/**
-	 * Update a text file on the backend service.
+	 * Create or Update a text file on the backend service.
 	 * @param path The path of the file to update
 	 * @param content The new text content of the file
 	 * @returns A promise that resolves to void on success, or rejects with an error
@@ -56,15 +54,7 @@ export interface FileManagerInterface {
 	updateTextFile(path: string, content: string): Promise<void>;
 
 	/**
-	 * Create a binary file on the backend service.
-	 * @param path The path of the file to create
-	 * @param content The binary content of the file to create
-	 * @returns A promise that resolves to void on success, or rejects with an error
-	 */
-	createBinaryFile(path: string, content: Buffer): Promise<void>;
-
-	/**
-	 * Update a binary file on the backend service.
+	 * Create or Update a binary file on the backend service.
 	 * @param path The path of the file to update
 	 * @param content The new binary content of the file
 	 * @returns A promise that resolves to void on success, or rejects with an error
@@ -99,3 +89,8 @@ export interface FileManagerInterface {
 	 */
 	deleteDirectory(path: string): Promise<void>;
 }
+
+/**
+ * Defines a Factory for creating a File Manager for a specific backend service
+ */
+export type FileManagerFactory = (options?: object) => FileManagerInterface;
