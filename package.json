@@ -7,6 +7,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@octokit/core": "^6.1.2",
+    "@octokit/plugin-create-or-update-text-file": "^5.1.0",
+    "@octokit/plugin-rest-endpoint-methods": "^13.2.1",
     "elysia": "latest"
   },
   "devDependencies": {
