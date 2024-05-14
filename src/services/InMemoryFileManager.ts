@@ -23,7 +23,7 @@ export class InMemoryResourceInfo implements ResourceInfo {
 	async getBinaryContent() {
 		const data = this.fileSystem.get(this.path);
 		if (data === undefined) {
-			throw new FileNotFoundError("Couldn't get binary content for file", this.path);
+			throw new FileNotFoundError(this.path, "Couldn't get binary content for file");
 		}
 		return typeof data === "string" ? Buffer.from(data, "utf-8") : data;
 	}
@@ -31,7 +31,7 @@ export class InMemoryResourceInfo implements ResourceInfo {
 	async getTextContent() {
 		const data = this.fileSystem.get(this.path);
 		if (data === undefined) {
-			throw new FileNotFoundError("Couldn't get text content for file", this.path);
+			throw new FileNotFoundError(this.path, "Couldn't get text content for file");
 		}
 		return typeof data === "string" ? data : data.toString("utf-8");
 	}
@@ -53,27 +53,20 @@ export class InMemoryResourceInfo implements ResourceInfo {
 export class InMemoryFileManager implements FileManagerInterface {
 	private fileSystem: Map<string, Buffer | string> = new Map();
 
-	async createTextFile(path: string, content: string) {
-		this.fileSystem.set(path, content);
+	async getTreeContent() {
+		const uniquePaths = new Set<string>();
+		for (const rscPath of this.fileSystem.keys()) {
+			// Remove the file name from the path
+			uniquePaths.add(rscPath.substring(0, rscPath.lastIndexOf("/")));
+		}
+		return [...uniquePaths];
 	}
 
 	async updateTextFile(path: string, content: string) {
-		const fileInfo = this.fileSystem.get(path);
-		if (!fileInfo) {
-			throw new FileNotFoundError(path);
-		}
-		this.fileSystem.set(path, content);
-	}
-
-	async createBinaryFile(path: string, content: Buffer) {
 		this.fileSystem.set(path, content);
 	}
 
 	async updateBinaryFile(path: string, content: Buffer) {
-		const fileInfo = this.fileSystem.get(path);
-		if (!fileInfo) {
-			throw new FileNotFoundError(path, "Cannot update file");
-		}
 		this.fileSystem.set(path, content);
 	}
 
