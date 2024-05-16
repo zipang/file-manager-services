@@ -1,49 +1,19 @@
-export interface ResourceInfo {
-	/**
-	 * The path to the ressource (file or directory)
-	 * Each directory path ends with a trailing `/`.
-	 */
-	path: string;
-	/**
-	 * @returns the name of the file or of the directory
-	 */
-	getName(): string;
-	/**
-	 * Get the size in bytes if available or undefined if not available.
-	 */
-	getSize(): Promise<number | void>;
-	/**
-	 * Get the binary content of the file.
-	 */
-	getBinaryContent(): Promise<Buffer | void>;
-	/**
-	 * Get the text content of the file.
-	 */
-	getTextContent(): Promise<string | void>;
-	/**
-	 * @returns true if the path is a directory, false otherwise
-	 */
-	isDirectory(): boolean;
-	/**
-	 * @returns true if the path is a file, false otherwise
-	 */
-	isFile(): boolean;
-}
+import { ResourceInfo } from "./ResourceInfo";
 
 /**
- * This interface describe all the available methods of any FileManager instance
+ * This interface describes all the available methods of any FileManager instance
  * The purpose of a FileManager is to create, update, delete files on a backend service.
  * It can also works with directories and list their content, create or delete directories.
- * All FileManager instances are created with specific options, one of them is the root of the file system.
- * The FileManager instance can never access files outside this given root.
- * All path parameters are relatives to this initial root path.
+ * All FileManager instances are created with specific options, one of them is the root directory of the file system.
+ * The FileManager instance can never access files outside this given root directory.
+ * All resources paths will start from this initial root path.
  */
 export interface FileManagerInterface {
 	/**
-	 * Retrieves the list of directories path without the files they contain
-	 * @returns A promise that resolves to an array of directory paths
+	 * Retrieves the list of all directory paths from the root
+	 * @returns A promise that resolves to an array of resources paths
 	 */
-	getTreeContent(): Promise<string[]>;
+	getTreeContent(): Promise<ResourceInfo[]>;
 
 	/**
 	 * Create or Update a text file on the backend service.
@@ -94,3 +64,4 @@ export interface FileManagerInterface {
  * Defines a Factory for creating a File Manager for a specific backend service
  */
 export type FileManagerFactory = (options?: object) => FileManagerInterface;
+export { ResourceInfo };
