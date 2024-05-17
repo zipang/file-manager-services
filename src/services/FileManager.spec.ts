@@ -51,19 +51,24 @@ const buildTestSuite =
 
 			it("updateTextFile() can create a new text file", async () => {
 				await fileManager.updateTextFile("/test.txt", "Hello, World!");
+
 				const entries = await fileManager.listDirectoryContent("/");
 				const foundTestFile = entries.find((entry) => entry.path === "/test.txt");
 				expect(foundTestFile).toBeDefined();
 				expect(foundTestFile?.isFile()).toBe(true);
+
+				const content = await fileManager.getFileContent("/test.txt");
+				expect(content).toBe("Hello, World!");
 			});
 
 			it("updateTextFile() can update an existing text file", async () => {
 				await fileManager.updateTextFile("/test2.txt", "Another new file created!");
+				let content = await fileManager.getFileContent("/test2.txt");
+				expect(content).toBe("Another new file created!");
+
 				await fileManager.updateTextFile("/test2.txt", "Now with updated content");
-				const entries = await fileManager.listDirectoryContent("/");
-				const foundTestFile = entries.find((entry) => entry.path === "/test2.txt");
-				expect(foundTestFile).toBeDefined();
-				expect(foundTestFile?.isFile()).toBe(true);
+				content = await fileManager.getFileContent("/test2.txt");
+				expect(content).toBe("Now with updated content");
 			});
 
 			it("updateBinaryFile() can create a new binary file", async () => {
