@@ -1,10 +1,20 @@
 import { Octokit } from "@octokit/core";
-import { composeCreateOrUpdateTextFile } from "@octokit/plugin-create-or-update-text-file";
 import { Api, restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
-import { FileManagerInterface, ResourceInfo } from "./FileManagerInterface";
-import { FileNotFoundError, FileUpdateError } from "./FileManagerErrors";
+import { FileManagerInterface } from "./FileManagerInterface";
+import { FileManagerError, FileNotFoundError, FileUpdateError } from "./FileManagerErrors";
+import { ResourceInfo } from "./ResourceInfo";
+import { normalizePath } from "./utils";
 
 const OctokitWithRestApi = Octokit.plugin(restEndpointMethods);
+
+type GithubFileInfo = {
+	type: "file";
+	encoding: string;
+	size: number;
+	path: string;
+	content: string | null;
+	sha: string | null;
+};
 
 interface GithubFileManagerOptions {
 	/**
@@ -20,99 +30,6 @@ interface GithubFileManagerOptions {
 	 * If not provided, the repository's root directory will be used.
 	 */
 	rootDir?: string;
-}
-
-/**
- * Add the root dir and sanitize everything
- * Note: the final path must _not_ start with a slash
- */
-const sanitizePath = (path: string, rootDir: string) => {
-	return (rootDir + "/" + path).split("/").filter(Boolean).join("/");
-};
-
-/**
- * Add the root dir and sanitize everything
- * Note: the final path must _not_ start with a slash
- */
-const removeRootDir = (path: string, rootDir: string) => {
-	if (rootDir.startsWith("/")) {
-		rootDir = rootDir.substring(1);
-	}
-	console.log(`Remove '${rootDir}' from '${path}'`);
-	return "/" + path.substring(rootDir.length);
-};
-
-export class GithubFileInfo implements ResourceInfo {
-	constructor(
-		public path: string,
-		private size: number,
-		private content: string = ""
-	) {}
-
-	isDirectory() {
-		return false;
-	}
-
-	isFile() {
-		return true;
-	}
-
-	/**
-	 * @returns the name of the file.
-	 */
-	getName() {
-		return this.path.split("/").pop() || "";
-	}
-
-	async getSize() {
-		return this.size;
-	}
-
-	async getTextContent() {
-		return this.content;
-	}
-
-	async getBinaryContent() {
-		return Buffer.from(this.content || "");
-	}
-
-	toString() {
-		return this.path;
-	}
-}
-
-export class GithubDirInfo implements ResourceInfo {
-	constructor(
-		public path: string,
-		private size: number
-	) {}
-
-	isDirectory() {
-		return true;
-	}
-
-	isFile() {
-		return false;
-	}
-
-	/**
-	 * @returns the name of the directory.
-	 */
-	getName() {
-		return this.path.split("/").pop() || "";
-	}
-
-	async getSize() {
-		return this.size;
-	}
-
-	async getTextContent() {
-		throw new FileNotFoundError(this.path, "Cannot get text content for directory");
-	}
-
-	async getBinaryContent() {
-		throw new FileNotFoundError(this.path, "Cannot get binary content for directory");
-	}
 }
 
 /**
@@ -140,19 +57,73 @@ export class GithubFileManager implements FileManagerInterface {
 		const { owner, repo } = this.extractOwnerAndRepo(githubRepoUrl);
 		this.owner = owner;
 		this.repo = repo;
-		this.rootDir = rootDir.endsWith("/") ? rootDir : rootDir + "/";
+		// Remove leading and trailing slashes as well as multiple
+		this.rootDir = normalizePath(rootDir);
 	}
 
 	/**
-	 * Extracts the repository's and owner's names from the github repo URL
+	 * Extract the repository's and owner's names from the github repo URL
 	 */
-	private extractOwnerAndRepo(url: string): { owner: string; repo: string } {
-		const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+	private extractOwnerAndRepo(githubUrl: string) {
+		const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
 		if (!match) {
-			throw new Error("Invalid GitHub repository URL");
+			throw new FileManagerError(400, "Invalid GitHub repository URL", githubUrl);
 		}
 		const [, owner, repo] = match;
 		return { owner, repo };
+	}
+
+	/**
+	 * Add the root directory to the path
+	 */
+	private getPathFromRoot(path: string): string {
+		return normalizePath(`${this.rootDir}/${path}`);
+	}
+
+	/**
+	 * Catch the 404 error when a file does not exist
+	 * and return instead a description with an empty content and sha
+	 */
+	private async getFileInfos(path: string): Promise<GithubFileInfo> {
+		path = this.getPathFromRoot(path);
+		return this.octokit.rest.repos
+			.getContent({
+				owner: this.owner,
+				repo: this.repo,
+				path
+			})
+			.then(({ data }) => {
+				if (Array.isArray(data) || data.type !== "file") {
+					// This path does not point to a file ressource
+					throw new FileNotFoundError(path, "Path is not a file");
+				}
+				return data;
+			})
+			.catch((err) => {
+				if (err.status === 404) {
+					return {
+						path,
+						content: null,
+						encoding: "base64",
+						type: "file",
+						size: 0,
+						sha: null
+					};
+				}
+				throw err;
+			});
+	}
+
+	async getFileContent(path: string): Promise<string | Buffer> {
+		const { content, encoding } = await this.getFileInfos(path);
+		if (content === null) {
+			throw new FileNotFoundError(path, "File does not exist");
+		}
+
+		if (encoding === "base64") {
+			return Buffer.from(content, "base64");
+		}
+		return content;
 	}
 
 	/**
@@ -175,7 +146,7 @@ export class GithubFileManager implements FileManagerInterface {
 
 		const directories = treeData.tree
 			.filter((item) => item.type === "tree" && item.path)
-			.map((item) => item.path) as string[];
+			.map(({ path }) => new ResourceInfo(path, { rootDir: this.rootDir }));
 
 		return directories;
 	}
@@ -184,78 +155,136 @@ export class GithubFileManager implements FileManagerInterface {
 	 * Creates or updates a text file on the github repository
 	 * @param path The path of the file
 	 * @param content New text content of the file
+	 * @param message Optionnal commit message
 	 * @returns A promise that resolves to void on success, or rejects with an error
 	 */
-	async updateTextFile(path: string, content: string) {
+	async updateTextFile(filePath: string, content: string, message?: string) {
+		// Retrieve the infos of the file to update
+		const { sha, path } = await this.getFileInfos(filePath);
+
 		try {
-			await composeCreateOrUpdateTextFile(this.octokit, {
-				owner: this.owner,
-				repo: this.repo,
-				path: sanitizePath(path, this.rootDir),
-				content,
-				message: `Updated '${path}'`
-			});
+			if (sha) {
+				// File already exists, it's an update
+				await this.octokit.rest.repos.createOrUpdateFileContents({
+					owner: this.owner,
+					repo: this.repo,
+					path,
+					message: `Updated ${path}`,
+					content: Buffer.from(content, "utf-8").toString("base64"),
+					sha
+				});
+			} else {
+				await this.octokit.rest.repos.createOrUpdateFileContents({
+					owner: this.owner,
+					repo: this.repo,
+					path,
+					message: `Created ${path}`,
+					content: Buffer.from(content, "utf-8").toString("base64")
+				});
+			}
 		} catch (err) {
-			throw new FileUpdateError(
-				path,
-				`Error while updating text content in Gihub repository: '${(err as Error).message}'`
-			);
+			throw new FileUpdateError(path, (err as Error).message);
 		}
 	}
 
-	updateBinaryFile(path: string, content: Buffer): Promise<void> {
-		throw new Error("Method not implemented.");
+	/**
+	 * Creates or updates a binary file on the github repository
+	 * @param filePath The path of the file
+	 * @param content New binary content of the file
+	 * @returns A promise that resolves to void on success, or rejects with an error
+	 */
+	async updateBinaryFile(filePath: string, content: Buffer): Promise<void> {
+		// Retrieve the infos of the file to update
+		const { sha, path } = await this.getFileInfos(filePath);
+
+		try {
+			if (sha) {
+				// File already exists, it's an update
+				await this.octokit.rest.repos.createOrUpdateFileContents({
+					owner: this.owner,
+					repo: this.repo,
+					path,
+					message: `Updated ${path}`,
+					content: content.toString("base64"),
+					sha
+				});
+			} else {
+				await this.octokit.rest.repos.createOrUpdateFileContents({
+					owner: this.owner,
+					repo: this.repo,
+					path,
+					message: `Created ${path}`,
+					content: content.toString("base64")
+				});
+			}
+		} catch (err) {
+			throw new FileUpdateError(path, (err as Error).message);
+		}
 	}
 
-	async deleteFile(path: string) {
+	async deleteFile(filePath: string) {
+		// Retrieve the infos of the file to update
+		const { sha, path } = await this.getFileInfos(filePath);
+
+		if (sha === null) {
+			// File does not exist.
+			return;
+		}
+
 		try {
-			await composeCreateOrUpdateTextFile(this.octokit, {
+			await this.octokit.rest.repos.deleteFile({
 				owner: this.owner,
 				repo: this.repo,
-				path: sanitizePath(path, this.rootDir),
-				content: null,
-				message: `Deleted '${path}'`
+				path,
+				message: `Deleted '${path}'`,
+				sha
 			});
 		} catch (err) {
-			throw new FileUpdateError(
-				path,
-				`Error while deleting file in Gihub repository: '${(err as Error).message}'`
-			);
+			throw new FileUpdateError(filePath, (err as Error).message);
 		}
 	}
 
 	async listDirectoryContent(dirPath: string) {
 		const entries: ResourceInfo[] = [];
+		const rootDir = this.rootDir;
 
 		// Get the directory content from the github repository
 		const { data } = await this.octokit.rest.repos.getContent({
 			owner: this.owner,
 			repo: this.repo,
-			path: sanitizePath(dirPath, this.rootDir)
+			path: this.getPathFromRoot(dirPath)
 		});
 
 		if (Array.isArray(data)) {
-			// Extract the file names from the directory content
-			for (const { type, path, size, content } of data) {
-				if (type === "file") {
-					entries.push(new GithubFileInfo(removeRootDir(path, this.rootDir), size, content));
-				}
-				if (type === "dir") {
-					entries.push(new GithubDirInfo(removeRootDir(path, this.rootDir) + "/", size));
+			// Extract entries type and path from the directory content
+			for (const { type, path } of data) {
+				if (type === "dir" || type === "file") {
+					entries.push(new ResourceInfo(path, { type, rootDir }));
 				}
 			}
 		}
 
-		console.log(`Listing of '${dirPath}':\n`, entries.join("\n"));
-
 		return entries;
 	}
 
-	createDirectory(path: string): Promise<void> {
-		throw new Error("Method not implemented.");
+	async createDirectory(path: string): Promise<void> {
+		const dirPath = this.getPathFromRoot(path);
+		// The github API does not support creating directories,
+		// so we create instead an empty `.gitkeep` file inside
+		const dummyFilePath = `${dirPath}/.gitkeep`;
+
+		return this.updateTextFile(dummyFilePath, "", `Created directory ${dirPath}`);
 	}
 
-	deleteDirectory(path: string): Promise<void> {
-		throw new Error("Method not implemented.");
+	async deleteDirectory(dirPath: string): Promise<void> {
+		const dirListing = await this.listDirectoryContent(dirPath);
+
+		for (const entry of dirListing) {
+			if (entry.isFile()) {
+				await this.deleteFile(entry.path);
+			} else if (entry.isDirectory()) {
+				await this.deleteDirectory(entry.path);
+			}
+		}
 	}
 }
