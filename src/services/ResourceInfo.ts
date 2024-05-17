@@ -1,4 +1,5 @@
 import { FileManagerError } from "./FileManagerErrors";
+import { normalizePath } from "./utils";
 
 export interface ResourceInfoOptions {
 	/**
@@ -13,9 +14,9 @@ export interface ResourceInfoOptions {
 }
 
 /**
- * Describes a ressource in the File System
+ * Describes a ressource of a File System
  * This minimal implementation will enforce our rules on resources paths :
- * - each path starts with a slash (/) meaning that it is the full path from the root of the File System
+ * - each path starts with a slash (/) meaning that it is the full path from the rootDir of the File System
  * - directories paths always end with a trailing slash (/)
  * - files paths do not end with a trailing slash (/) and MUST have an extension
  */
@@ -26,11 +27,16 @@ export class ResourceInfo {
 		}
 
 		let { rootDir = "", type } = options;
+
 		if (!type) {
-			type = rscPath.endsWith("/") ? "dir" : "file";
+			// Detect a file path to the presence of a file extension
+			type = rscPath.match(/\.[a-zA-Z]+$/) ? "file" : "dir";
 		}
-		rscPath = rscPath.replace(rootDir, "").split("/").filter(Boolean).join("/");
-		this.path = "/" + rscPath + (type === "dir" ? "/" : "");
+
+		this.path = normalizePath(rscPath.replace(normalizePath(rootDir), ""), {
+			addLeadingSlash: true,
+			addTrailingSlash: type === "dir"
+		});
 	}
 
 	/**
@@ -44,20 +50,39 @@ export class ResourceInfo {
 	 */
 	getName() {
 		const parts = this.path.split("/").filter(Boolean);
-		return parts.pop() || "";
+		return parts.pop() || "<root>";
 	}
 
 	/**
-	 * @returns true if the path is a directory, false otherwise
+	 * @returns the extension of the file
+	 */
+	getExt() {
+		if (!this.isFile()) {
+			throw new FileManagerError(400, "The resource is not a file");
+		}
+		return this.getName().split(".").pop() || "";
+	}
+
+	isText() {
+		// look at the mime type of the extension to know if is a known text format
+		return this.getExt().match(/txt|html|css|js|json|md|xml|yml|yaml/);
+	}
+
+	/**
+	 * @returns TRUE if the path is a directory, FALSE otherwise
 	 */
 	isDirectory() {
 		return this.path.endsWith("/");
 	}
 
 	/**
-	 * @returns true if the path is a file, false otherwise
+	 * @returns TRUE if the path is a file, FALSE otherwise
 	 */
 	isFile() {
 		return !this.path.endsWith("/");
+	}
+
+	toString() {
+		return this.path;
 	}
 }
