@@ -16,6 +16,13 @@ export interface FileManagerInterface {
 	getTreeContent(): Promise<ResourceInfo[]>;
 
 	/**
+	 * Retrieves the content of a file on the backend service.
+	 * @param path The path of the file to retrieve
+	 * @returns A promise that resolves to the text content or to a binary Buffer
+	 */
+	getFileContent(path: string): Promise<string | Buffer>;
+
+	/**
 	 * Create or Update a text file on the backend service.
 	 * @param path The path of the file to update
 	 * @param content The new text content of the file
@@ -64,4 +71,3 @@ export interface FileManagerInterface {
  * Defines a Factory for creating a File Manager for a specific backend service
  */
 export type FileManagerFactory = (options?: object) => FileManagerInterface;
-export { ResourceInfo };
