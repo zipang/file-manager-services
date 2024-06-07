@@ -17,3 +17,14 @@ export const normalizePath = (rscPath: string, opts: NormalizePathOptions = DEFA
 	const trimmed = rscPath.split("/").filter(Boolean).join("/");
 	return `${opts.addLeadingSlash ? "/" : ""}${trimmed}${opts.addTrailingSlash ? "/" : ""}`;
 };
+
+/**
+ * Split a resource path to return its parent folder and resource name
+ */
+export const splitPath = (rscPath: string) => {
+	const fileNamePosition = rscPath.lastIndexOf("/") + 1;
+	return [
+		rscPath.substring(0, fileNamePosition), // path to parent folder
+		rscPath.substring(fileNamePosition) // resource's name
+	];
+};
