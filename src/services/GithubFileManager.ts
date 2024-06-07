@@ -280,9 +280,9 @@ export class GithubFileManager implements FileManagerInterface {
 		const dirListing = await this.listDirectoryContent(dirPath);
 
 		for (const entry of dirListing) {
-			if (entry.isFile()) {
+			if (entry.isFile) {
 				await this.deleteFile(entry.path);
-			} else if (entry.isDirectory()) {
+			} else if (entry.isDirectory) {
 				await this.deleteDirectory(entry.path);
 			}
 		}
