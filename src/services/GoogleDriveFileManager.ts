@@ -1,11 +1,12 @@
-import { google } from "googleapis";
+import { drive_v3, google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import { FileManagerInterface } from "./FileManagerInterface";
 import { ResourceInfo } from "./ResourceInfo";
 import { FileManagerError, FileNotFoundError } from "./FileManagerErrors";
+import { normalizePath, splitPath } from "./utils";
 
 export class GoogleDriveFileManager implements FileManagerInterface {
-	private drive: any;
+	private drive: drive_v3.Drive;
 	private rootDir: string;
 
 	constructor(oauth2Client: OAuth2Client, rootDir: string = "root") {
@@ -14,14 +15,18 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 	}
 
 	async getTreeContent(): Promise<ResourceInfo[]> {
+		const rootId = await this.getFolderIdByPath(this.rootDir);
 		try {
-			const response = await this.drive.files.list({
-				q: `'${this.rootDir}' in parents and trashed = false`,
-				fields: "files(id, name, mimeType)"
-			});
-			return response.data.files.map(
-				(file: any) =>
-					new ResourceInfo(file.name, {
+			const files =
+				(
+					await this.drive.files.list({
+						q: `'${this.rootDir}' in parents and trashed = false`,
+						fields: "files(id, name, mimeType)"
+					})
+				).data.files || [];
+			return files.map(
+				(file: drive_v3.Schema$File) =>
+					new ResourceInfo(file.name || "", {
 						rootDir: this.rootDir,
 						type: file.mimeType === "application/vnd.google-apps.folder" ? "dir" : "file"
 					})
@@ -54,7 +59,6 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			await this.drive.files.update({
 				fileId,
 				media: {
-					mimeType: "text/plain",
 					body: content
 				}
 			});
@@ -69,7 +73,6 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			await this.drive.files.update({
 				fileId,
 				media: {
-					mimeType: "application/octet-stream",
 					body: content
 				}
 			});
@@ -90,11 +93,15 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 	async listDirectoryContent(path: string): Promise<ResourceInfo[]> {
 		const fileId = await this.getFolderIdByPath(path);
 		try {
-			const response = await this.drive.files.list({
-				q: `'${fileId}' in parents and trashed = false`,
-				fields: "files(id, name, mimeType, parents)"
-			});
-			return response.data.files.map(
+			const files =
+				(
+					await this.drive.files.list({
+						q: `'${fileId}' in parents and trashed = false`,
+						fields: "files(id, name, mimeType, parents)"
+					})
+				).data.files || [];
+
+			return files.map(
 				(file: any) =>
 					new ResourceInfo(file.name, {
 						rootDir: this.rootDir,
@@ -124,6 +131,13 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 	}
 
 	/**
+	 * Add the root directory to the path
+	 */
+	private getPathFromRoot(path: string): string {
+		return normalizePath(`${this.rootDir}/${path}`);
+	}
+
+	/**
 	 * Get a folder's ID
 	 * Optionally create the folder if it doesn't exist
 	 * @param folderPath
@@ -133,8 +147,10 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 		folderPath: string,
 		createIfNotExist: boolean = false
 	): Promise<string> {
+		folderPath = this.getPathFromRoot(folderPath);
+
 		let folderId = "root";
-		let resp, files;
+		let resp, files: drive_v3.Schema$File[];
 
 		const folderNames = folderPath.split("/").filter(Boolean);
 
@@ -143,24 +159,24 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 				q: `'${folderId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
 				fields: "files(id, name)"
 			});
-			files = resp.data.files;
+			files = resp.data.files || [];
 
 			if (files.length > 0) {
-				folderId = files[0].id;
+				folderId = files[0].id || "";
 			} else {
 				// This directory doesn't exist
 				if (createIfNotExist === false) {
 					throw new FileNotFoundError(folderPath, `Folder '${folderPath}' does not exist`);
 				}
 				resp = await this.drive.files.create({
-					resource: {
+					requestBody: {
 						name: folderName,
 						mimeType: "application/vnd.google-apps.folder",
 						parents: [folderId]
 					},
 					fields: "id"
 				});
-				folderId = resp.data.id;
+				folderId = resp.data.id || "";
 			}
 		}
 
@@ -171,23 +187,23 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 	 * Get a file's ID
 	 * @param filePath
 	 */
-	private async getFileIdByPath(filePath: string) {
-		const { parent, name } = new ResourceInfo(filePath, { rootDir: this.rootDir });
+	private async getFileIdByPath(filePath: string): Promise<string> {
+		const [parentFolder, fileName] = splitPath(filePath);
 
 		// Get the parent folder's id then get the file id
-		return this.getFolderIdByPath(parent)
-			.then((folderId) =>
+		return this.getFolderIdByPath(parentFolder)
+			.then((parentFolderId) =>
 				this.drive.files.list({
-					q: `'${folderId}' in parents and name='${name}' and trashed = false`,
+					q: `'${parentFolderId}' in parents and name='${fileName}' and trashed = false`,
 					fields: "files(id)"
 				})
 			)
-			.then((resp) => {
-				const files = resp.data.files;
+			.then(({ data }) => {
+				const files = data.files || [];
 				if (files.length === 0) {
 					throw new FileNotFoundError(filePath, `File '${filePath}' does not exist`);
 				}
-				return files[0].id;
+				return files[0].id || "";
 			});
 	}
 }
