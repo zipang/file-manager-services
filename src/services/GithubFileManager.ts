@@ -16,7 +16,7 @@ type GithubFileInfo = {
 	sha: string | null;
 };
 
-interface GithubFileManagerOptions {
+export interface GithubFileManagerOptions {
 	/**
 	 * The URL of the Github repository to use for file storage.
 	 */

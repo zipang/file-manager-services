@@ -66,8 +66,3 @@ export interface FileManagerInterface {
 	 */
 	deleteDirectory(path: string): Promise<void>;
 }
-
-/**
- * Defines a Factory for creating a File Manager for a specific backend service
- */
-export type FileManagerFactory = (options?: object) => FileManagerInterface;
