@@ -4,10 +4,10 @@ This package provides a set of services for managing files on various backend se
 
 ## Features
 
-- Create, read, update, and delete files and directories
-- List directory contents and retrieve file tree structure
-- Consistent interface across different backend services
-- Easy to extend with new service implementations
+-   Create, read, update, and delete files and directories
+-   List directory contents and retrieve file tree structure
+-   Consistent interface across different backend services
+-   Easy to extend with new service implementations
 
 ## Available Implementations
 
@@ -21,26 +21,25 @@ The package includes three implementations:
 
 All implementations adhere to the `FileManagerInterface`, which defines the following methods:
 
-- `getTreeContent(): Promise<ResourceInfo[]>`
-- `getFileContent(path: string): Promise<string | Buffer>`
-- `updateTextFile(path: string, content: string): Promise<void>`
-- `updateBinaryFile(path: string, content: Buffer): Promise<void>`
-- `deleteFile(path: string): Promise<void>`
-- `listDirectoryContent(path: string): Promise<ResourceInfo[]>`
-- `createDirectory(path: string): Promise<void>`
-- `deleteDirectory(path: string): Promise<void>`
+-   `getFileContent(path: string): Promise<string | Buffer>`
+-   `updateTextFile(path: string, content: string): Promise<void>`
+-   `updateBinaryFile(path: string, content: Buffer): Promise<void>`
+-   `deleteFile(path: string): Promise<void>`
+-   `listDirectoryContent(path: string, recursive?: boolean): Promise<ResourceInfo[]>`
+-   `createDirectory(path: string): Promise<void>`
+-   `deleteDirectory(path: string): Promise<void>`
 
 ## ResourceInfo
 
 The `ResourceInfo` interface represents information about a file or directory. It includes the following properties:
 
-- `path`: The full path to the resource (file or directory). Directory paths end with a trailing `/`.
-- `name`: The name of the file or directory.
-- `parent`: The path to the parent directory.
-- `ext`: The file extension (only for files).
-- `isText`: A boolean indicating if the resource is a known text format.
-- `isDirectory`: A boolean indicating if the resource is a directory.
-- `isFile`: A boolean indicating if the resource is a file.
+-   `path`: The full path to the resource (file or directory). Directory paths end with a trailing `/`.
+-   `name`: The name of the file or directory.
+-   `parent`: The path to the parent directory.
+-   `ext`: The file extension (only for files).
+-   `isText`: A boolean indicating if the resource is a known text format.
+-   `isDirectory`: A boolean indicating if the resource is a directory.
+-   `isFile`: A boolean indicating if the resource is a file.
 
 ## Usage
 
@@ -53,23 +52,22 @@ To use a file manager service:
 **Usage Example with GithubFileManager:**
 
 ```typescript
-import { GithubFileManager } from './services/GithubFileManager';
+import { GithubFileManager } from "./services/GithubFileManager";
 
 const githubManager = new GithubFileManager({
-  githubRepoUrl: 'https://github.com/user/repo',
-  githubApplicationToken: 'your-github-token',
-  rootDir: 'optional/root/directory'
+	githubRepoUrl: "https://github.com/user/repo",
+	githubApplicationToken: "your-github-token",
+	rootDir: "optional/root/directory",
 });
 
-// List directory content
-const files = await githubManager.listDirectoryContent('/path/to/directory');
+// List the first level of a directory content
+const files = await githubManager.listDirectoryContent("/path/to/directory");
 
 // Update a text file
-await githubManager.updateTextFile('/path/to/file.txt', 'New content');
+await githubManager.updateTextFile("/path/to/file.txt", "New content");
 
 // Delete a file
-await githubManager.deleteFile('/path/to/file.txt');
-
+await githubManager.deleteFile("/path/to/file.txt");
 ```
 
 ## Environment Variables

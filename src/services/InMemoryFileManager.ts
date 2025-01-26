@@ -17,15 +17,6 @@ export class InMemoryFileManager implements FileManagerInterface {
 		return content;
 	}
 
-	async getTreeContent() {
-		const uniquePaths = new Set<ResourceInfo>();
-		for (const rscPath of this.fileSystem.keys()) {
-			// Remove the file name from the path
-			uniquePaths.add(new ResourceInfo(rscPath.substring(0, rscPath.lastIndexOf("/"))));
-		}
-		return [...uniquePaths];
-	}
-
 	async updateTextFile(path: string, content: string) {
 		this.fileSystem.set(path, content);
 	}
@@ -42,12 +33,21 @@ export class InMemoryFileManager implements FileManagerInterface {
 		this.fileSystem.delete(path);
 	}
 
-	async listDirectoryContent(dirPath: string) {
+	async listDirectoryContent(dirPath: string, recursive = false) {
 		const fs = this.fileSystem;
 		const dirContent: ResourceInfo[] = [];
 		for (const rscPath of fs.keys()) {
 			if (rscPath.startsWith(dirPath)) {
-				dirContent.push(new ResourceInfo(rscPath));
+				if (recursive) {
+					// Any path starting with the dirPath is a child of the directory
+					dirContent.push(new ResourceInfo(rscPath));
+				} else {
+					// We don't want sub-directories and their content if recursive is false
+					const relativePath = rscPath.substring(dirPath.length);
+					if (!relativePath.includes("/")) {
+						dirContent.push(new ResourceInfo(rscPath));
+					}
+				}
 			}
 		}
 		return dirContent;

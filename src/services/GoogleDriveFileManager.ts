@@ -14,42 +14,23 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 		this.rootDir = rootDir;
 	}
 
-	async getTreeContent(): Promise<ResourceInfo[]> {
-		const rootId = await this.getFolderIdByPath(this.rootDir);
-		try {
-			const files =
-				(
-					await this.drive.files.list({
-						q: `'${this.rootDir}' in parents and trashed = false`,
-						fields: "files(id, name, mimeType)"
-					})
-				).data.files || [];
-			return files.map(
-				(file: drive_v3.Schema$File) =>
-					new ResourceInfo(file.name || "", {
-						rootDir: this.rootDir,
-						type: file.mimeType === "application/vnd.google-apps.folder" ? "dir" : "file"
-					})
-			);
-		} catch (error) {
-			throw new FileManagerError(500, "Failed to retrieve directory paths");
-		}
-	}
-
 	async getFileContent(path: string): Promise<string | Buffer> {
 		const fileId = await this.getFileIdByPath(path);
 		try {
 			const response = await this.drive.files.get(
 				{
 					fileId,
-					alt: "media"
+					alt: "media",
 				},
 				{ responseType: "arraybuffer" }
 			);
 
 			return Buffer.from(response.data as ArrayBuffer);
 		} catch (error) {
-			throw new FileManagerError(500, `Failed to retrieve content of the file at path: ${path}`);
+			throw new FileManagerError(
+				500,
+				`Failed to retrieve content of the file at path: ${path}`
+			);
 		}
 	}
 	async updateTextFile(path: string, content: string): Promise<void> {
@@ -58,8 +39,8 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			await this.drive.files.update({
 				fileId,
 				media: {
-					body: content
-				}
+					body: content,
+				},
 			});
 		} catch (error) {
 			throw new FileManagerError(500, `Failed to update text file at path: ${path}`);
@@ -72,8 +53,8 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			await this.drive.files.update({
 				fileId,
 				media: {
-					body: content
-				}
+					body: content,
+				},
 			});
 		} catch (error) {
 			throw new FileManagerError(500, `Failed to update binary file at path: ${path}`);
@@ -96,7 +77,7 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 				(
 					await this.drive.files.list({
 						q: `'${fileId}' in parents and trashed = false`,
-						fields: "files(id, name, mimeType, parents)"
+						fields: "files(id, name, mimeType, parents)",
 					})
 				).data.files || [];
 
@@ -104,7 +85,8 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 				(file: any) =>
 					new ResourceInfo(file.name, {
 						rootDir: this.rootDir,
-						type: file.mimeType === "application/vnd.google-apps.folder" ? "dir" : "file"
+						type:
+							file.mimeType === "application/vnd.google-apps.folder" ? "dir" : "file",
 					})
 			);
 		} catch (error) {
@@ -156,7 +138,7 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 		for (const folderName of folderNames) {
 			resp = await this.drive.files.list({
 				q: `'${folderId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-				fields: "files(id, name)"
+				fields: "files(id, name)",
 			});
 			files = resp.data.files || [];
 
@@ -165,15 +147,18 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			} else {
 				// This directory doesn't exist
 				if (createIfNotExist === false) {
-					throw new FileNotFoundError(folderPath, `Folder '${folderPath}' does not exist`);
+					throw new FileNotFoundError(
+						folderPath,
+						`Folder '${folderPath}' does not exist`
+					);
 				}
 				resp = await this.drive.files.create({
 					requestBody: {
 						name: folderName,
 						mimeType: "application/vnd.google-apps.folder",
-						parents: [folderId]
+						parents: [folderId],
 					},
-					fields: "id"
+					fields: "id",
 				});
 				folderId = resp.data.id || "";
 			}
@@ -194,7 +179,7 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 			.then((parentFolderId) =>
 				this.drive.files.list({
 					q: `'${parentFolderId}' in parents and name='${fileName}' and trashed = false`,
-					fields: "files(id)"
+					fields: "files(id)",
 				})
 			)
 			.then(({ data }) => {

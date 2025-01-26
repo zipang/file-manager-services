@@ -52,7 +52,7 @@ export class GithubFileManager implements FileManagerInterface {
 		this.githubApplicationToken = githubApplicationToken;
 		this.octokit = new OctokitWithRestApi({
 			auth: this.githubApplicationToken,
-			userAgent: "Github File Manager Service/v1.0.0"
+			userAgent: "Github File Manager Service/v1.0.0",
 		});
 		const { owner, repo } = this.extractOwnerAndRepo(githubRepoUrl);
 		this.owner = owner;
@@ -90,7 +90,7 @@ export class GithubFileManager implements FileManagerInterface {
 			.getContent({
 				owner: this.owner,
 				repo: this.repo,
-				path
+				path,
 			})
 			.then(({ data }) => {
 				if (Array.isArray(data) || data.type !== "file") {
@@ -107,7 +107,7 @@ export class GithubFileManager implements FileManagerInterface {
 						encoding: "base64",
 						type: "file",
 						size: 0,
-						sha: null
+						sha: null,
 					};
 				}
 				throw err;
@@ -124,31 +124,6 @@ export class GithubFileManager implements FileManagerInterface {
 			return Buffer.from(content, "base64");
 		}
 		return content;
-	}
-
-	/**
-	 * Retrieves the list of directories path without the files they contain
-	 * @returns A promise that resolves to an array of directory paths
-	 */
-	async getTreeContent() {
-		const { data: refData } = await this.octokit.rest.git.getRef({
-			owner: this.owner,
-			repo: this.repo,
-			ref: "heads/main"
-		});
-
-		const { data: treeData } = await this.octokit.rest.git.getTree({
-			owner: this.owner,
-			repo: this.repo,
-			tree_sha: refData.object.sha,
-			recursive: "true"
-		});
-
-		const directories = treeData.tree
-			.filter((item) => item.type === "tree" && item.path)
-			.map(({ path }) => new ResourceInfo(path, { rootDir: this.rootDir }));
-
-		return directories;
 	}
 
 	/**
@@ -171,7 +146,7 @@ export class GithubFileManager implements FileManagerInterface {
 					path,
 					message: `Updated ${path}`,
 					content: Buffer.from(content, "utf-8").toString("base64"),
-					sha
+					sha,
 				});
 			} else {
 				await this.octokit.rest.repos.createOrUpdateFileContents({
@@ -179,7 +154,7 @@ export class GithubFileManager implements FileManagerInterface {
 					repo: this.repo,
 					path,
 					message: `Created ${path}`,
-					content: Buffer.from(content, "utf-8").toString("base64")
+					content: Buffer.from(content, "utf-8").toString("base64"),
 				});
 			}
 		} catch (err) {
@@ -206,7 +181,7 @@ export class GithubFileManager implements FileManagerInterface {
 					path,
 					message: `Updated ${path}`,
 					content: content.toString("base64"),
-					sha
+					sha,
 				});
 			} else {
 				await this.octokit.rest.repos.createOrUpdateFileContents({
@@ -214,7 +189,7 @@ export class GithubFileManager implements FileManagerInterface {
 					repo: this.repo,
 					path,
 					message: `Created ${path}`,
-					content: content.toString("base64")
+					content: content.toString("base64"),
 				});
 			}
 		} catch (err) {
@@ -237,22 +212,29 @@ export class GithubFileManager implements FileManagerInterface {
 				repo: this.repo,
 				path,
 				message: `Deleted '${path}'`,
-				sha
+				sha,
 			});
 		} catch (err) {
 			throw new FileUpdateError(filePath, (err as Error).message);
 		}
 	}
 
-	async listDirectoryContent(dirPath: string) {
+	/**
+	 * Lists contents of a directory
+	 * @param path Directory path relative to root directory
+	 * @param recursive Whether to list contents recursively
+	 * @returns Array of ResourceInfo objects describing directory contents
+	 */
+	async listDirectoryContent(dirPath: string, recursive = false) {
 		const entries: ResourceInfo[] = [];
+		const pendingSubDirs: Promise<ResourceInfo[]>[] = [];
 		const rootDir = this.rootDir;
 
 		// Get the directory content from the github repository
 		const { data } = await this.octokit.rest.repos.getContent({
 			owner: this.owner,
 			repo: this.repo,
-			path: this.getPathFromRoot(dirPath)
+			path: this.getPathFromRoot(dirPath),
 		});
 
 		if (Array.isArray(data)) {
@@ -260,11 +242,18 @@ export class GithubFileManager implements FileManagerInterface {
 			for (const { type, path } of data) {
 				if (type === "dir" || type === "file") {
 					entries.push(new ResourceInfo(path, { type, rootDir }));
+
+					// If recursive is true and this is a directory, collect the promise
+					if (recursive && type === "dir") {
+						pendingSubDirs.push(this.listDirectoryContent(path, true));
+					}
 				}
 			}
 		}
 
-		return entries;
+		// Wait for all subdirectories content to be retrieved in parallel
+		const subEntries = await Promise.all(pendingSubDirs);
+		return entries.concat(...subEntries);
 	}
 
 	async createDirectory(path: string): Promise<void> {

@@ -1,12 +1,14 @@
 import { describe, beforeEach, it, expect, afterAll } from "bun:test";
-import { FileManagerInterface, FileManagerFactory } from "./FileManagerInterface";
+import { FileManagerInterface } from "./FileManagerInterface";
 import { InMemoryFileManager } from "./InMemoryFileManager";
 import { GithubFileManager } from "./GithubFileManager";
+
+type FileManagerFactory = () => FileManagerInterface;
 
 const allFileManagers: [
 	fileManagerName: string,
 	fileManagerFactory: FileManagerFactory,
-	cleanup?: () => Promise<void>
+	cleanup?: () => Promise<void>,
 ][] = [
 	["InMemoryFileManager", () => new InMemoryFileManager()],
 	[
@@ -14,15 +16,17 @@ const allFileManagers: [
 		() =>
 			new GithubFileManager({
 				githubRepoUrl: process.env.GITHUB_TEST_REPO_URL || "GITHUB_TEST_REPO_URL",
-				githubApplicationToken: process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN",
-				rootDir: "/tests/"
+				githubApplicationToken:
+					process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN",
+				rootDir: "/tests/",
 			}),
 		() =>
 			new GithubFileManager({
 				githubRepoUrl: process.env.GITHUB_TEST_REPO_URL || "GITHUB_TEST_REPO_URL",
-				githubApplicationToken: process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN"
-			}).deleteDirectory("/tests/")
-	]
+				githubApplicationToken:
+					process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN",
+			}).deleteDirectory("/tests/"),
+	],
 ];
 
 const buildTestSuite =

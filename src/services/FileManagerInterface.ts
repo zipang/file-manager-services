@@ -10,12 +10,6 @@ import { ResourceInfo } from "./ResourceInfo";
  */
 export interface FileManagerInterface {
 	/**
-	 * Retrieves the list of all directory paths from the root
-	 * @returns A promise that resolves to an array of resources paths
-	 */
-	getTreeContent(): Promise<ResourceInfo[]>;
-
-	/**
 	 * Retrieves the content of a file on the backend service.
 	 * @param path The path of the file to retrieve
 	 * @returns A promise that resolves to the text content or to a binary Buffer
@@ -47,10 +41,11 @@ export interface FileManagerInterface {
 
 	/**
 	 * List the content of a directory on the backend service.
-	 * @param path The path of the directory to list
+	 * @param {string} path The path of the directory to scan
+	 * @param {boolean} recursive Pass TRUE to scan all child directories. Default: FALSE
 	 * @returns A promise that resolves to an array of FileInfo objects
 	 */
-	listDirectoryContent(path: string): Promise<ResourceInfo[]>;
+	listDirectoryContent(path: string, recursive?: boolean): Promise<ResourceInfo[]>;
 
 	/**
 	 * Create a new directory on the backend service.
