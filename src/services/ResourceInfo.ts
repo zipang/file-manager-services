@@ -1,5 +1,5 @@
 import { FileManagerError } from "./FileManagerErrors";
-import { normalizePath } from "./utils";
+import { normalizePath } from "../utils";
 
 export interface ResourceInfoOptions {
 	/**
@@ -98,4 +98,25 @@ export class ResourceInfo {
 	toString(): string {
 		return this._path;
 	}
+
+	toJSON() {
+		return this.isDirectory
+			? {
+					name: this.name,
+					path: this.path,
+					type: "folder"
+				}
+			: {
+					name: this.name,
+					ext: this.ext,
+					path: this.path,
+					isText: this.isText,
+					type: "file"
+				};
+	}
+}
+
+export interface FolderContent {
+	files: ResourceInfo[];
+	folders: ResourceInfo[];
 }

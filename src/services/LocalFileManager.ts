@@ -1,7 +1,7 @@
-import { FileManagerInterface } from "./FileManagerInterface";
-import { ResourceInfo } from "./ResourceInfo";
-import { join } from "node:path";
 import { mkdir, readdir, rm, rmdir } from "node:fs/promises";
+import { join } from "node:path";
+import type { FileManagerInterface } from "./FileManagerInterface";
+import { ResourceInfo } from "./ResourceInfo";
 
 export interface LocalFileManagerOptions {
 	rootDir: string;
@@ -72,7 +72,7 @@ export class LocalFileManager implements FileManagerInterface {
 			(entry) =>
 				new ResourceInfo(join(entry.parentPath, entry.name), {
 					rootDir,
-					type: entry.isDirectory() ? "dir" : "file",
+					type: entry.isDirectory() ? "dir" : "file"
 				})
 		);
 	}

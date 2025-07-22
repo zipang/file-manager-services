@@ -1,7 +1,7 @@
 import { FileManagerError } from "./FileManagerErrors";
-import { GithubFileManager, GithubFileManagerOptions } from "./GithubFileManager";
+import { GithubFileManager, type GithubFileManagerOptions } from "./GithubFileManager";
 import { InMemoryFileManager } from "./InMemoryFileManager";
-import { LocalFileManager, LocalFileManagerOptions } from "./LocalFileManager";
+import { LocalFileManager, type LocalFileManagerOptions } from "./LocalFileManager";
 
 export type FileManagerOptions = GithubFileManagerOptions | LocalFileManagerOptions;
 
@@ -24,13 +24,13 @@ export class FileManagerFactory {
 				}
 				return new GithubFileManager({
 					...(options as GithubFileManagerOptions),
-					githubRepoUrl: storeUrl,
+					githubRepoUrl: storeUrl
 				});
 			case "memory":
 				return new InMemoryFileManager();
 			case "file":
 				return new LocalFileManager({
-					rootDir: store,
+					rootDir: store
 				});
 			default:
 				throw new FileManagerError(400, `Unknown file manager type: ${type}`);

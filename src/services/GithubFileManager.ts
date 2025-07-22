@@ -1,9 +1,9 @@
 import { Octokit } from "@octokit/core";
-import { Api, restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
-import { FileManagerInterface } from "./FileManagerInterface";
+import { type Api, restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
+import type { FileManagerInterface } from "./FileManagerInterface";
 import { FileManagerError, FileNotFoundError, FileUpdateError } from "./FileManagerErrors";
 import { ResourceInfo } from "./ResourceInfo";
-import { normalizePath } from "./utils";
+import { normalizePath } from "../utils";
 
 const OctokitWithRestApi = Octokit.plugin(restEndpointMethods);
 
@@ -52,7 +52,7 @@ export class GithubFileManager implements FileManagerInterface {
 		this.githubApplicationToken = githubApplicationToken;
 		this.octokit = new OctokitWithRestApi({
 			auth: this.githubApplicationToken,
-			userAgent: "Github File Manager Service/v1.0.0",
+			userAgent: "Github File Manager Service/v1.0.0"
 		});
 		const { owner, repo } = this.extractOwnerAndRepo(githubRepoUrl);
 		this.owner = owner;
@@ -65,7 +65,7 @@ export class GithubFileManager implements FileManagerInterface {
 	 * Extract the repository's and owner's names from the github repo URL
 	 */
 	private extractOwnerAndRepo(githubUrl: string) {
-		const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+		const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
 		if (!match) {
 			throw new FileManagerError(400, "Invalid GitHub repository URL", githubUrl);
 		}
@@ -85,12 +85,12 @@ export class GithubFileManager implements FileManagerInterface {
 	 * and return instead a description with an empty content and sha
 	 */
 	private async getFileInfos(path: string): Promise<GithubFileInfo> {
-		path = this.getPathFromRoot(path);
+		const fullPath = this.getPathFromRoot(path);
 		return this.octokit.rest.repos
 			.getContent({
 				owner: this.owner,
 				repo: this.repo,
-				path,
+				path
 			})
 			.then(({ data }) => {
 				if (Array.isArray(data) || data.type !== "file") {
@@ -107,7 +107,7 @@ export class GithubFileManager implements FileManagerInterface {
 						encoding: "base64",
 						type: "file",
 						size: 0,
-						sha: null,
+						sha: null
 					};
 				}
 				throw err;
@@ -133,7 +133,7 @@ export class GithubFileManager implements FileManagerInterface {
 	 * @param message Optionnal commit message
 	 * @returns A promise that resolves to void on success, or rejects with an error
 	 */
-	async updateTextFile(filePath: string, content: string, message?: string) {
+	async updateTextFile(filePath: string, content: string, _message?: string) {
 		// Retrieve the infos of the file to update
 		const { sha, path } = await this.getFileInfos(filePath);
 
@@ -146,7 +146,7 @@ export class GithubFileManager implements FileManagerInterface {
 					path,
 					message: `Updated ${path}`,
 					content: Buffer.from(content, "utf-8").toString("base64"),
-					sha,
+					sha
 				});
 			} else {
 				await this.octokit.rest.repos.createOrUpdateFileContents({
@@ -154,7 +154,7 @@ export class GithubFileManager implements FileManagerInterface {
 					repo: this.repo,
 					path,
 					message: `Created ${path}`,
-					content: Buffer.from(content, "utf-8").toString("base64"),
+					content: Buffer.from(content, "utf-8").toString("base64")
 				});
 			}
 		} catch (err) {
@@ -181,7 +181,7 @@ export class GithubFileManager implements FileManagerInterface {
 					path,
 					message: `Updated ${path}`,
 					content: content.toString("base64"),
-					sha,
+					sha
 				});
 			} else {
 				await this.octokit.rest.repos.createOrUpdateFileContents({
@@ -189,7 +189,7 @@ export class GithubFileManager implements FileManagerInterface {
 					repo: this.repo,
 					path,
 					message: `Created ${path}`,
-					content: content.toString("base64"),
+					content: content.toString("base64")
 				});
 			}
 		} catch (err) {
@@ -212,7 +212,7 @@ export class GithubFileManager implements FileManagerInterface {
 				repo: this.repo,
 				path,
 				message: `Deleted '${path}'`,
-				sha,
+				sha
 			});
 		} catch (err) {
 			throw new FileUpdateError(filePath, (err as Error).message);
@@ -234,7 +234,7 @@ export class GithubFileManager implements FileManagerInterface {
 		const { data } = await this.octokit.rest.repos.getContent({
 			owner: this.owner,
 			repo: this.repo,
-			path: this.getPathFromRoot(dirPath),
+			path: this.getPathFromRoot(dirPath)
 		});
 
 		if (Array.isArray(data)) {

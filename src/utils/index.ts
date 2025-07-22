@@ -1,3 +1,5 @@
+import type { ResourceInfo } from "../services/ResourceInfo";
+
 interface NormalizePathOptions {
 	addLeadingSlash?: boolean;
 	addTrailingSlash?: boolean;
@@ -28,3 +30,23 @@ export const splitPath = (rscPath: string) => {
 		rscPath.substring(fileNamePosition) // resource's name
 	];
 };
+
+/**
+ * Split a list of file system ressources into files and folders
+ * @param ressources
+ */
+export const filesAndFolders = (ressources: ResourceInfo[]) =>
+	ressources.reduce(
+		(o, rsc) => {
+			if (rsc.isFile) {
+				o.files.push(rsc);
+			} else {
+				o.folders.push(rsc);
+			}
+			return o;
+		},
+		{
+			files: [] as ResourceInfo[],
+			folders: [] as ResourceInfo[]
+		}
+	);

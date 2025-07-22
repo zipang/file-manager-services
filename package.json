@@ -1,28 +1,23 @@
 {
 	"name": "file-manager-services",
-	"version": "1.0.50",
+	"version": "1.1.0",
 	"scripts": {
 		"tests": "bun test src/**/*.spec.ts",
-		"format": "prettier --write ."
+		"format": "biome format --write .",
+		"lint": "biome lint ."
 	},
 	"dependencies": {
-		"@octokit/core": "^6.1.3",
-		"@octokit/plugin-rest-endpoint-methods": "^13.3.0",
+		"@octokit/core": "^6.1.6",
+		"@octokit/plugin-rest-endpoint-methods": "^13.5.0",
 		"googleapis": "^144.0.0"
 	},
 	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^8.21.0",
-		"@typescript-eslint/parser": "^8.21.0",
-		"bun-types": "^1.2.0",
-		"eslint": "^9.19.0",
-		"eslint-plugin-astro": "^1.3.1",
-		"eslint-plugin-jsx-a11y": "^6.10.2",
-		"eslint-plugin-solid": "^0.14.5",
-		"prettier": "3.4.2"
+		"@biomejs/biome": "^2.1.2",
+		"bun-types": "^1.2.19"
 	},
 	"module": "src/index.ts",
 	"type": "module",
 	"peerDependencies": {
-		"typescript": "^5.7.3"
+		"typescript": "^5.8.3"
 	}
 }

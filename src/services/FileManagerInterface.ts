@@ -1,4 +1,4 @@
-import { ResourceInfo } from "./ResourceInfo";
+import type { ResourceInfo } from "./ResourceInfo";
 
 /**
  * This interface describes all the available methods of any FileManager instance
@@ -43,7 +43,7 @@ export interface FileManagerInterface {
 	 * List the content of a directory on the backend service.
 	 * @param {string} path The path of the directory to scan
 	 * @param {boolean} recursive Pass TRUE to scan all child directories. Default: FALSE
-	 * @returns A promise that resolves to an array of FileInfo objects
+	 * @returns A promise that resolves to an array of ResourceInfo objects
 	 */
 	listDirectoryContent(path: string, recursive?: boolean): Promise<ResourceInfo[]>;
 

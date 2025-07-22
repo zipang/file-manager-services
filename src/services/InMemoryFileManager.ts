@@ -1,5 +1,5 @@
 import { FileNotFoundError } from "./FileManagerErrors";
-import { FileManagerInterface } from "./FileManagerInterface";
+import type { FileManagerInterface } from "./FileManagerInterface";
 import { ResourceInfo } from "./ResourceInfo";
 
 /**
