@@ -19,8 +19,7 @@
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab",
-		"indentWidth": 4,
+		"useEditorconfig": true,
 		"lineWidth": 110
 	},
 	"assist": { "actions": { "source": { "organizeImports": "on" } } },
