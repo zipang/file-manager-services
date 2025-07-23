@@ -9,6 +9,10 @@ import { ResourceInfo } from "./ResourceInfo";
 export class InMemoryFileManager implements FileManagerInterface {
 	private fileSystem: Map<string, Buffer | string> = new Map();
 
+	getInfo(path: string): ResourceInfo {
+		return new ResourceInfo(path);
+	}
+
 	async getFileContent(path: string): Promise<string | Buffer> {
 		const content = this.fileSystem.get(path);
 		if (!content) {

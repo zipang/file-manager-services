@@ -17,6 +17,12 @@ export interface FileManagerInterface {
 	getFileContent(path: string): Promise<string | Buffer>;
 
 	/**
+	 * Get detailed info about the resource on this path
+	 * @param path The path of the file or folder
+	 */
+	getInfo(path: string): ResourceInfo;
+
+	/**
 	 * Create or Update a text file on the backend service.
 	 * @param path The path of the file to update
 	 * @param content The new text content of the file

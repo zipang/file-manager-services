@@ -1,8 +1,8 @@
-import { type drive_v3, google } from "googleapis";
 import type { OAuth2Client } from "google-auth-library";
+import { type drive_v3, google } from "googleapis";
+import { FileManagerError, FileNotFoundError } from "./FileManagerErrors";
 import type { FileManagerInterface } from "./FileManagerInterface";
 import { ResourceInfo } from "./ResourceInfo";
-import { FileManagerError, FileNotFoundError } from "./FileManagerErrors";
 import { normalizePath, splitPath } from "../utils";
 
 export class GoogleDriveFileManager implements FileManagerInterface {
@@ -18,6 +18,13 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 	constructor(oauth2Client: OAuth2Client, rootDir = "/") {
 		this.drive = google.drive({ version: "v3", auth: oauth2Client });
 		this.rootDir = rootDir;
+	}
+	/**
+	 * Get detailed info about the resource on this path
+	 * @param path The path of the file or folder
+	 */
+	getInfo(path: string): ResourceInfo {
+		return new ResourceInfo(path, { rootDir: this.rootDir });
 	}
 
 	async getFileContent(path: string): Promise<string | Buffer> {
@@ -141,6 +148,7 @@ export class GoogleDriveFileManager implements FileManagerInterface {
 		if (cachedId) return cachedId;
 
 		let folderId = "root";
+		// biome-ignore lint/suspicious/noImplicitAnyLet: it is a temporary result
 		let resp;
 		let files: drive_v3.Schema$File[];
 

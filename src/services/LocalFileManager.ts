@@ -16,6 +16,13 @@ export class LocalFileManager implements FileManagerInterface {
 	constructor(options: LocalFileManagerOptions) {
 		this.rootDir = options.rootDir || "/";
 	}
+	/**
+	 * Get detailed info about the resource on this path
+	 * @param path The path of the file or folder
+	 */
+	getInfo(path: string): ResourceInfo {
+		return new ResourceInfo(path, { rootDir: this.rootDir });
+	}
 
 	/**
 	 * Gets file content as text or binary buffer
@@ -66,7 +73,10 @@ export class LocalFileManager implements FileManagerInterface {
 	async listDirectoryContent(path: string, recursive = false): Promise<ResourceInfo[]> {
 		const rootDir = this.rootDir;
 		const fullPath = join(rootDir, path);
-		const dirEntries = await readdir(fullPath, { withFileTypes: true, recursive });
+		const dirEntries = await readdir(fullPath, {
+			withFileTypes: true,
+			recursive
+		});
 
 		return dirEntries.map(
 			(entry) =>

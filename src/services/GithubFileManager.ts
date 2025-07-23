@@ -90,7 +90,7 @@ export class GithubFileManager implements FileManagerInterface {
 			.getContent({
 				owner: this.owner,
 				repo: this.repo,
-				path
+				path: fullPath
 			})
 			.then(({ data }) => {
 				if (Array.isArray(data) || data.type !== "file") {
@@ -112,6 +112,14 @@ export class GithubFileManager implements FileManagerInterface {
 				}
 				throw err;
 			});
+	}
+
+	/**
+	 * Get detailed info about the resource on this path
+	 * @param path The path of the file or folder
+	 */
+	getInfo(path: string): ResourceInfo {
+		return new ResourceInfo(path, { rootDir: this.rootDir });
 	}
 
 	async getFileContent(path: string): Promise<string | Buffer> {
