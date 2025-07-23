@@ -17,7 +17,7 @@ export const normalizePath = (rscPath: string, opts: NormalizePathOptions = DEFA
 	if (!rscPath) return "";
 
 	const trimmed = rscPath.split("/").filter(Boolean).join("/");
-	return `${opts.addLeadingSlash ? "/" : ""}${trimmed}${opts.addTrailingSlash ? "/" : ""}`;
+	return `${opts.addLeadingSlash ? "/" : ""}${trimmed}${trimmed.length && opts.addTrailingSlash ? "/" : ""}`;
 };
 
 /**
