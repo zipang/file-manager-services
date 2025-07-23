@@ -16,7 +16,7 @@ export interface ResourceInfoOptions {
 /**
  * Describes a resource of a File System
  * This minimal implementation will enforce our rules on resources paths :
- * - each path starts with a slash (/) meaning that it is the full path from the rootDir of the File System
+ * - each path starts with a slash (/) meaning that it is the full path from the <root> of the File System
  * - directories paths always end with a trailing slash (/)
  * - files paths do not end with a trailing slash (/) and MUST have an extension
  */
@@ -25,13 +25,20 @@ export class ResourceInfo {
 
 	constructor(rscPath?: string, options: ResourceInfoOptions = {}) {
 		if (!rscPath) {
-			throw new FileManagerError(400, "Empty path specified for resource");
+			throw new FileManagerError(
+				400,
+				`Bad parameter : empty path specified for new resource. 
+Use '/' to refer to the <root> directory.`
+			);
 		}
 
 		let { rootDir = "", type } = options;
 
 		if (!type) {
-			// Detect a file path to the presence of a file extension
+			if (rscPath.endsWith("/")) {
+				type = "dir";
+			}
+			// last ressort : infer file type by the presence of a file extension
 			type = rscPath.match(/\.[a-zA-Z]+$/) ? "file" : "dir";
 		}
 
@@ -50,35 +57,62 @@ export class ResourceInfo {
 	}
 
 	/**
-	 * @returns the name of the file or of the directory
+	 * @returns the full name of the file (with extension) or of the directory
+	 */
+	get fullname(): string {
+		const parts = this._path.split("/").filter(Boolean);
+		// @ts-ignore .pop() cannot return undefined if length > 0
+		return parts.length === 0 ? "<root>" : parts.pop();
+	}
+
+	/**
+	 * @returns the name of the file or of the directory (_without extension_)
 	 */
 	get name(): string {
-		const parts = this._path.split("/").filter(Boolean);
-		return parts.pop() || "<root>";
+		return this.fullname.split(".")[0];
 	}
 
 	/**
-	 * @returns the path to the parent directory
+	 * Path to the parent directory
+	 * @returns the path to the parent directory or `null` for the <root>
 	 */
-	get parent(): string {
-		return this._path.substring(0, this._path.lastIndexOf("/"));
+	get parent(): string | null {
+		const parts = this._path.split("/").filter(Boolean);
+		// @ts-ignore .pop() cannot return undefined if length > 0
+		if (parts.length === 0) {
+			// No parent for the root
+			return null;
+		}
+		parts.pop();
+		return normalizePath(parts.join("/"), {
+			addLeadingSlash: true,
+			addTrailingSlash: true
+		});
 	}
 
 	/**
-	 * @returns the extension of the file
+	 * @returns file's extension (in lowercase)
+	 * NOTE: return all extensions combined if there are several (eg: archive.tar.gz => tar.gz)
 	 */
 	get ext(): string {
-		if (!this.isFile) {
-			throw new FileManagerError(400, "The resource is not a file");
+		if (this.isFile) {
+			const fullname = this.fullname;
+			const dotPos = fullname.indexOf(".");
+			return dotPos < 0 ? "" : fullname.substring(dotPos + 1).toLowerCase();
 		}
-		return this.name.split(".").pop() || "";
+		// directories don't have extensions
+		return "";
 	}
 
 	/**
-	 * @returns TRUE if the resource is a known text format
+	 * @returns TRUE if the resource is some known text format
 	 */
 	get isText(): boolean {
-		return Boolean(this.ext.match(/txt|html|css|js|json|md|xml|yml|yaml/));
+		return Boolean(
+			this.ext.match(
+				/(txt|md|html|css|js|jsx|ts|tsx|json|jsonc|yml|yaml|toml|log|ini|conf|cfg|env|properties|csv|xml|sh|bat|py|php|java|rb|go|pl|lua|c|cpp|h|hpp|rs|scss|sass|less|tex|rst|sql|vue|astro|dockerfile|mk|groovy|swift|kt|kts|dart|erl|ex|exs|scala)$/i
+			)
+		);
 	}
 
 	/**
@@ -99,6 +133,9 @@ export class ResourceInfo {
 		return this._path;
 	}
 
+	/**
+	 * Use this representation to serialize in JSON
+	 */
 	toJSON() {
 		return this.isDirectory
 			? {
@@ -110,8 +147,8 @@ export class ResourceInfo {
 					name: this.name,
 					ext: this.ext,
 					path: this.path,
-					isText: this.isText,
-					type: "file"
+					type: "file",
+					isText: this.isText
 				};
 	}
 }
