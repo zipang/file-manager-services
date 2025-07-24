@@ -41,14 +41,13 @@ export class InMemoryFileManager implements FileManagerInterface {
 		const fs = this.fileSystem;
 		const dirContent: ResourceInfo[] = [];
 		for (const rscPath of fs.keys()) {
-			if (rscPath.startsWith(dirPath)) {
+			if (rscPath.startsWith(dirPath) && rscPath !== dirPath) {
 				if (recursive) {
-					// Any path starting with the dirPath is a child of the directory
 					dirContent.push(new ResourceInfo(rscPath));
 				} else {
-					// We don't want sub-directories and their content if recursive is false
 					const relativePath = rscPath.substring(dirPath.length);
-					if (!relativePath.includes("/")) {
+					const segments = relativePath.split("/").filter(Boolean);
+					if (segments.length === 1) {
 						dirContent.push(new ResourceInfo(rscPath));
 					}
 				}
@@ -60,7 +59,16 @@ export class InMemoryFileManager implements FileManagerInterface {
 	async createDirectory(dirPath: string) {
 		// Ensure the path follows the convention for directories
 		if (!dirPath.endsWith("/")) dirPath += "/";
-		this.fileSystem.set(dirPath, "");
+
+		const pathParts = dirPath.split("/").filter(Boolean);
+		let currentPath = "";
+		for (const part of pathParts) {
+			currentPath += `/${part}`;
+			const currentDirPath = `${currentPath}/`;
+			if (!this.fileSystem.has(currentDirPath)) {
+				this.fileSystem.set(currentDirPath, "");
+			}
+		}
 	}
 
 	async deleteDirectory(dirPath: string) {

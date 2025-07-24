@@ -1,35 +1,12 @@
 import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import type { FileManagerInterface } from "./FileManagerInterface";
 import { InMemoryFileManager } from "./InMemoryFileManager";
-import { GithubFileManager } from "./GithubFileManager";
 
 type FileManagerFactory = () => FileManagerInterface;
 
-const allFileManagers: [
-	fileManagerName: string,
-	fileManagerFactory: FileManagerFactory,
-	cleanup?: () => Promise<void>
-][] = [
-	["InMemoryFileManager", () => new InMemoryFileManager()],
-	[
-		"GithubFileManager",
-		() =>
-			new GithubFileManager({
-				githubRepoUrl: process.env.GITHUB_TEST_REPO_URL || "GITHUB_TEST_REPO_URL",
-				githubApplicationToken: process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN",
-				rootDir: "/tests/"
-			}),
-		() =>
-			new GithubFileManager({
-				githubRepoUrl: process.env.GITHUB_TEST_REPO_URL || "GITHUB_TEST_REPO_URL",
-				githubApplicationToken: process.env.GITHUB_TEST_APP_TOKEN || "GITHUB_TEST_APP_TOKEN"
-			}).deleteDirectory("/tests/")
-	]
-];
-
-const buildTestSuite =
+export const testSuite =
 	(fileManagerName: string, fileManagerFactory: FileManagerFactory, cleanup?: () => Promise<void>) =>
-	() => {
+	async () => {
 		/**
 		 * Test suite
 		 */
@@ -116,7 +93,13 @@ const buildTestSuite =
 		});
 	};
 
-// Execute the test suite for each file manager
-allFileManagers.forEach((testParameters) => {
-	buildTestSuite(...testParameters)();
+describe("FileManager test suite", () => {
+	it("is creates a function to run", () => {
+		const badTestSuite = testSuite(
+			"in memory",
+			() => new InMemoryFileManager(),
+			async () => undefined
+		);
+		expect(badTestSuite).toBeFunction();
+	});
 });
