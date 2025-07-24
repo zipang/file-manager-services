@@ -60,9 +60,9 @@ Use '/' to refer to the <root> directory.`
 	 * @returns the full name of the file (with extension) or of the directory
 	 */
 	get fullname(): string {
-		const parts = this._path.split("/").filter(Boolean);
+		const pathParts = this._path.split("/").filter(Boolean);
 		// @ts-ignore .pop() cannot return undefined if length > 0
-		return parts.length === 0 ? "<root>" : parts.pop();
+		return pathParts.length === 0 ? "<root>" : pathParts.pop();
 	}
 
 	/**
@@ -73,21 +73,17 @@ Use '/' to refer to the <root> directory.`
 	}
 
 	/**
-	 * Path to the parent directory
-	 * @returns the path to the parent directory or `null` for the <root>
+	 * Parent directory
+	 * @returns normalized path to the parent directory or `null` for the <root>
 	 */
-	get parent(): string | null {
-		const parts = this._path.split("/").filter(Boolean);
-		// @ts-ignore .pop() cannot return undefined if length > 0
-		if (parts.length === 0) {
+	get parent(): ResourceInfo | null {
+		const pathParts = this._path.split("/").filter(Boolean);
+		if (pathParts.length === 0) {
 			// No parent for the root
 			return null;
 		}
-		parts.pop();
-		return normalizePath(parts.join("/"), {
-			addLeadingSlash: true,
-			addTrailingSlash: true
-		});
+		pathParts.pop();
+		return new ResourceInfo(`${pathParts.join("/")}/`);
 	}
 
 	/**

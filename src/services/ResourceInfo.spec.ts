@@ -105,12 +105,26 @@ describe("ResourceInfo", () => {
 	describe("resource's parent", () => {
 		it("should return parent directory for file", () => {
 			const rsc = new ResourceInfo("/foo/bar/baz.txt");
-			expect(rsc.parent).toBe("/foo/bar/");
+			expect(rsc.parent).toBeInstanceOf(ResourceInfo);
+			expect(rsc.parent?.path).toBe("/foo/bar/");
 		});
 
 		it("should return parent directory for directory", () => {
 			const rsc = new ResourceInfo("/foo/bar/");
-			expect(rsc.parent).toBe("/foo/");
+			expect(rsc.parent).toBeInstanceOf(ResourceInfo);
+			expect(rsc.parent?.path).toBe("/foo/");
+		});
+
+		it("should return root for top-level directory", () => {
+			const rsc = new ResourceInfo("/foo/");
+			expect(rsc.parent).toBeInstanceOf(ResourceInfo);
+			expect(rsc.parent?.path).toBe("/");
+		});
+
+		it("should return root for top-level file", () => {
+			const rsc = new ResourceInfo("/foo.txt");
+			expect(rsc.parent).toBeInstanceOf(ResourceInfo);
+			expect(rsc.parent?.path).toBe("/");
 		});
 
 		it("should return null for the root parent", () => {
