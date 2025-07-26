@@ -31,11 +31,16 @@ export const splitPath = (rscPath: string) => {
 	];
 };
 
+export interface FolderContent {
+	files: ResourceInfo[];
+	folders: ResourceInfo[];
+}
+
 /**
  * Split a list of file system ressources into files and folders
  * @param ressources
  */
-export const filesAndFolders = (ressources: ResourceInfo[]) =>
+export const filesAndFolders = (ressources: ResourceInfo[]): FolderContent =>
 	ressources.reduce(
 		(o, rsc) => {
 			if (rsc.isFile) {
