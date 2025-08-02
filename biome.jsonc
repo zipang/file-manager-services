@@ -9,13 +9,13 @@
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
-			"**/src/**/*",
-			"**/.vscode/**/*",
-			"**/.storybook/**/*",
-			"**/index.html",
-			"**/*.config.ts",
+			"build.ts",
+			"package.json",
+			"src/**/*",
 			"!**/src/routeTree.gen.ts",
-			"!**/.next/**/*"
+			"!**/.next/**/*",
+			"!**/dist/**/*",
+			"!**/node_modules/**/*"
 		]
 	},
 	"formatter": {
