@@ -5,7 +5,7 @@
 console.log("Starting build process...");
 
 // Build services with bun target
-const servicesBuild = await Bun.build({
+const buildServices = await Bun.build({
 	entrypoints: ["./src/services/index.ts"],
 	outdir: "./dist/services",
 	target: "bun",
@@ -16,15 +16,15 @@ const servicesBuild = await Bun.build({
 	external: ["@octokit/core", "@octokit/plugin-rest-endpoint-methods", "googleapis"]
 });
 
-if (!servicesBuild.success) {
-	console.error("Services build failed:", servicesBuild.logs);
+if (!buildServices.success) {
+	console.error("Services build failed:", buildServices.logs);
 	process.exit(1);
 }
 
 console.log("Services build completed successfully!");
 
 // Build utils with browser target
-const utilsBuild = await Bun.build({
+const buildUtils = await Bun.build({
 	entrypoints: ["./src/utils/index.ts"],
 	outdir: "./dist/utils",
 	target: "browser",
@@ -34,8 +34,8 @@ const utilsBuild = await Bun.build({
 	splitting: true
 });
 
-if (!utilsBuild.success) {
-	console.error("Utils build failed:", utilsBuild.logs);
+if (!buildUtils.success) {
+	console.error("Utils build failed:", buildUtils.logs);
 	process.exit(1);
 }
 
