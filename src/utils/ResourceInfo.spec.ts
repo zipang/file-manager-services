@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { FileManagerError } from "./FileManagerErrors";
+import { FileManagerError } from "../services/FileManagerErrors";
 import { ResourceInfo } from "./ResourceInfo";
 
 describe("ResourceInfo", () => {

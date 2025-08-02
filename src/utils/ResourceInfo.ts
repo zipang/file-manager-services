@@ -1,5 +1,4 @@
-import { FileManagerError } from "./FileManagerErrors";
-import { normalizePath } from "../utils";
+import { normalizePath } from ".";
 
 export interface ResourceInfoOptions {
 	/**
@@ -25,8 +24,7 @@ export class ResourceInfo {
 
 	constructor(rscPath?: string, options: ResourceInfoOptions = {}) {
 		if (!rscPath) {
-			throw new FileManagerError(
-				400,
+			throw new Error(
 				`Bad parameter : empty path specified for new resource. 
 Use '/' to refer to the <root> directory.`
 			);
