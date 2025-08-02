@@ -1,10 +1,20 @@
 {
 	"name": "file-manager-services",
 	"version": "1.1.0",
+	"main": "dist/services/index.js",
+	"types": "dist/services/index.d.ts",
+	"exports": {
+		"./services": "./dist/services/index.js",
+		"./utils": "./dist/utils/index.js"
+	},
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"tests": "bun test src/**/*.spec.ts",
 		"format": "biome format --write .",
-		"lint": "biome lint ."
+		"lint": "biome lint .",
+		"build": "bun run build.ts"
 	},
 	"dependencies": {
 		"@octokit/core": "^6.1.6",
