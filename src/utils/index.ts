@@ -1,4 +1,4 @@
-import type { ResourceInfo } from "../services/ResourceInfo";
+import type { ResourceInfo } from "./ResourceInfo";
 
 interface NormalizePathOptions {
 	addLeadingSlash?: boolean;

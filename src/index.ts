@@ -6,5 +6,5 @@ export * from "./services/FileManagerFactory";
 export * from "./services/FileManagerInterface";
 export * from "./services/GithubFileManager";
 export * from "./services/LocalFileManager";
-export * from "./services/ResourceInfo";
+export * from "./utils/ResourceInfo";
 export * from "./utils";
