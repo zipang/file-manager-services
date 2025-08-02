@@ -2,7 +2,7 @@ import type { OAuth2Client } from "google-auth-library";
 import { type drive_v3, google } from "googleapis";
 import { FileManagerError, FileNotFoundError } from "./FileManagerErrors";
 import type { FileManagerInterface } from "./FileManagerInterface";
-import { ResourceInfo } from "./ResourceInfo";
+import { ResourceInfo } from "../utils/ResourceInfo";
 import { normalizePath, splitPath } from "../utils";
 
 export class GoogleDriveFileManager implements FileManagerInterface {

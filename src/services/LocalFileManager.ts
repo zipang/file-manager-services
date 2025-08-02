@@ -1,7 +1,7 @@
 import { mkdir, readdir, rm, rmdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { FileManagerInterface } from "./FileManagerInterface";
-import { ResourceInfo } from "./ResourceInfo";
+import { ResourceInfo } from "../utils/ResourceInfo";
 
 export interface LocalFileManagerOptions {
 	rootDir: string;

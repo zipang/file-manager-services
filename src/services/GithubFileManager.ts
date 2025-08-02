@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/core";
 import { type Api, restEndpointMethods } from "@octokit/plugin-rest-endpoint-methods";
 import type { FileManagerInterface } from "./FileManagerInterface";
 import { FileManagerError, FileNotFoundError, FileUpdateError } from "./FileManagerErrors";
-import { ResourceInfo } from "./ResourceInfo";
+import { ResourceInfo } from "../utils/ResourceInfo";
 import { normalizePath } from "../utils";
 
 const OctokitWithRestApi = Octokit.plugin(restEndpointMethods);

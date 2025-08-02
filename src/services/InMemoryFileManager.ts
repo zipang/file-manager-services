@@ -1,6 +1,6 @@
 import { FileNotFoundError } from "./FileManagerErrors";
 import type { FileManagerInterface } from "./FileManagerInterface";
-import { ResourceInfo } from "./ResourceInfo";
+import { ResourceInfo } from "../utils/ResourceInfo";
 
 /**
  * This file manager uses a Map to store the files in memory.
